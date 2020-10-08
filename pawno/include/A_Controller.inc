@@ -5,10 +5,14 @@
 	Discord Group: https://discord.gg/SNeMsy5
 \* ---------------------------------- */
 
-#if defined acontroller_included
+#if defined _inc_acontroller
+	#undef _inc_acontroller
+#endif
+
+#if defined _acontroller_included
     #endinput
 #endif
-#define acontroller_included
+#define _acontroller_included
 
 /* How to use:*/
 /*----------------------------------------------------------------------------*\
@@ -38,12 +42,12 @@ Description::
 
 /*----------------------------------------------------------------------------*\
 Function:
-	Controller_IsWorking(playerid);
+	Controller_IsActive(playerid);
 Params:
 	playerid - 	The ID of the player to check.
 Return:
-	1: Player is opening the controller.
-	0: Player doesn't open the controller.
+	true: Player is opening the controller.
+	false: Player doesn't open the controller.
 Description::
 	Check if a player is opening any controller.
 \*----------------------------------------------------------------------------*/
@@ -100,7 +104,7 @@ Description::
 #endif
 
 /* =========== FORWARD =========== */
-forward Controller_Finish(playerid, controllerid, result);
+forward Controller_Finish(const playerid, const controllerid, const result);
 
 /* =========== VARIABLES =========== */
 
@@ -126,12 +130,13 @@ static Controller_Key_Count[MAX_PLAYERS][CONTROLLER_MAX_KEY];
 static Float:Controller_Key_Pos[MAX_PLAYERS][CONTROLLER_MAX_KEY];
 static Controller_Key_Type[MAX_PLAYERS][CONTROLLER_MAX_KEY];
 static Controller_Key_Color[MAX_PLAYERS][CONTROLLER_MAX_KEY];
+static bool:Controller_Active[MAX_PLAYERS];
 static Controller_Id[MAX_PLAYERS];
 static Controller_GetTickCount[MAX_PLAYERS];
 
 /* =========== FUNCTIONS =========== */
 
-stock PlayerText:Controller_CreateCircle(playerid, Float:x = CONTROLLER_DEFAULT_CIRCLE_X, Float:y = CONTROLLER_DEFAULT_CIRCLE_Y) {
+stock PlayerText:Controller_CreateCircle(const playerid, const Float:x = CONTROLLER_DEFAULT_CIRCLE_X, const Float:y = CONTROLLER_DEFAULT_CIRCLE_Y) {
 	new PlayerText:textdrawid;
 	textdrawid = CreatePlayerTextDraw(playerid, x, y, "LD_BEAT:CRING");
 	PlayerTextDrawTextSize(playerid, textdrawid, 58.000000, 64.000000);
@@ -145,7 +150,7 @@ stock PlayerText:Controller_CreateCircle(playerid, Float:x = CONTROLLER_DEFAULT_
 	return textdrawid;
 }
 
-stock PlayerText:Controller_CreateKey(playerid, image[], Float:x = CONTROLLER_DEFAULT_X, Float:y = CONTROLLER_DEFAULT_Y) {
+stock PlayerText:Controller_CreateKey(const playerid, image[], const Float:x = CONTROLLER_DEFAULT_X, const Float:y = CONTROLLER_DEFAULT_Y) {
 	new PlayerText:textdrawid;
 	textdrawid = CreatePlayerTextDraw(playerid, x, y, image);
 	PlayerTextDrawTextSize(playerid, textdrawid, 30.000000, 32.000000);
@@ -158,14 +163,13 @@ stock PlayerText:Controller_CreateKey(playerid, image[], Float:x = CONTROLLER_DE
 	return textdrawid;
 }
 
-stock Controller_IsWorking(playerid) {
-	if(GetPVarInt(playerid, "Controller::IsWorking")) return 1;
-	return 0;
+stock Controller_IsActive(const playerid) {
+	return Controller_Active[playerid];
 }
 
-stock Controller_Destroy(playerid) {
+stock Controller_Destroy(const playerid) {
 	if(!IsPlayerConnected(playerid)) return 0;
-	if(GetPVarInt(playerid, "Controller::IsWorking")) {
+	if(Controller_IsActive(playerid)) {
 		if(Image_Controller_Circle[playerid] != PlayerText:INVALID_TEXT_DRAW) {
 			PlayerTextDrawDestroy(playerid, Image_Controller_Circle[playerid]);
 			Image_Controller_Circle[playerid] = PlayerText:INVALID_TEXT_DRAW;
@@ -183,13 +187,13 @@ stock Controller_Destroy(playerid) {
 		Controller_Value[playerid][key_Total_Press] = 0;
 		Controller_Value[playerid][key_Wrong_Press] = 0;
 		Controller_Value[playerid][key_Success_Press] = 0;
-		DeletePVar(playerid, "Controller::IsWorking");
+		Controller_Active[playerid] = false;
 		return 1;
 	}
 	return 0;
 }
 
-stock Controller_Show(playerid, controllerid) {
+stock Controller_Show(const playerid, const controllerid) {
 	if(!IsPlayerConnected(playerid)) return 0;
 	if(controllerid < 0) return 0;
 
@@ -216,12 +220,12 @@ stock Controller_Show(playerid, controllerid) {
 	KillTimer(Controller_Timer[playerid][time_UpdateKey]);
 	Controller_Timer[playerid][time_UpdateKey] = -1;
 	Controller_Timer[playerid][time_UpdateKey] = SetTimerEx("Controller_Update", 20, false, "i", playerid);
-	SetPVarInt(playerid, "Controller::IsWorking", 1);
+	Controller_Active[playerid] = true;
 	TogglePlayerControllable(playerid, false);
 	return 1;
 }
 
-stock Controller_GetType(playerid, slot) {
+stock Controller_GetType(const playerid, const slot) {
 	new arrow[20];
 	switch(Controller_Key_Type[playerid][slot]) {
 		case 0: format(arrow, sizeof arrow, "LD_BEAT:UP");
@@ -232,7 +236,7 @@ stock Controller_GetType(playerid, slot) {
 	return arrow;
 }
 
-stock Controller_GetKey(playerid) {
+stock Controller_GetKey(const playerid) {
 	new key;
 	switch(Controller_Key_Type[playerid][Controller_Value[playerid][key_Active]]) {
 		case 0: key = KEY_UP+1;
@@ -243,15 +247,15 @@ stock Controller_GetKey(playerid) {
 	return key;
 }
 
-stock Controller_KeyActive(playerid) {
+stock Controller_KeyActive(const playerid) {
 	if(CONTROLLER_ACTIVE_POS_MIN <= Controller_Key_Pos[playerid][Controller_Value[playerid][key_Active]] <= CONTROLLER_ACTIVE_POS_MAX) return 1;
 	return 0;
 }
 
-forward Controller_Update(playerid);
-public Controller_Update(playerid) {
+forward Controller_Update(const playerid);
+public Controller_Update(const playerid) {
 	if(!IsPlayerConnected(playerid)) return 0;
-	if(Controller_IsWorking(playerid)) {
+	if(Controller_IsActive(playerid)) {
 		if((GetTickCount() - Controller_Timer[playerid][time_CircleColor]) >= 200) {
 			PlayerTextDrawColor(playerid, Image_Controller_Circle[playerid], 0xFFFFFFFF);
 			PlayerTextDrawShow(playerid, Image_Controller_Circle[playerid]);
@@ -312,7 +316,7 @@ public Controller_Update(playerid) {
 	return 1;
 }
 
-stock Controller_Result(playerid, success, wrong) {
+stock Controller_Result(const playerid, const success, const wrong) {
 	if(!IsPlayerConnected(playerid)) return 0;
 	new Float:result;
 	result = (float(success) / float(success + wrong)) * 100;
@@ -366,6 +370,8 @@ public OnPlayerConnect(playerid) {
 		Controller_Key_Pos[playerid][i] = CONTROLLER_DEFAULT_X;
 		Controller_Key_Type[playerid][i] = -1;
 	}
+
+	Controller_Active[playerid] = false;
 	Controller_Id[playerid] = -1;
 	Controller_Value[playerid][key_Total_Key] = 0;
 	Controller_Value[playerid][key_Active] = 0;
@@ -390,7 +396,7 @@ public OnPlayerConnect(playerid) {
 #endif
 
 public OnPlayerUpdate(playerid) {
-	if(GetPVarInt(playerid, "Controller::IsWorking")) {
+	if(Controller_IsActive(playerid)) {
 		new key, keys, updown, leftright;
 		GetPlayerKeys(playerid, keys, updown, leftright);
 		if((updown || leftright) && (GetTickCount() - Controller_GetTickCount[playerid]) >= 200) {
