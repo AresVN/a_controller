@@ -5,6 +5,10 @@
 	Discord Group: https://discord.gg/SNeMsy5
 \* ---------------------------------- */
 
+#if !defined _samp_included
+	#error "Please include a_samp or a_npc before A_Controller"
+#endif
+
 #if defined _inc_acontroller
 	#undef _inc_acontroller
 #endif
