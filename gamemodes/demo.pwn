@@ -27,8 +27,8 @@ CMD:dancing(playerid) {
 
 public Controller_Finish(playerid, controllerid, result) {
 	if(controllerid == 1) {
-		if(result) SendClientMessage(playerid, 0xFFFF00AA, "[DANCING]: Ban da hoan thanh thu thach");
-		else SendClientMessage(playerid, 0xFF6347AA, "[DANCING]: Ban da that bai thu thach");
+		if(result) SendClientMessage(playerid, 0xFFFF00AA, "[DANCING]: Success !!!");
+		else SendClientMessage(playerid, 0xFF6347AA, "[DANCING]: Failed !!!");
 		ClearAnimations(playerid);
 		SetPlayerSpecialAction(playerid, 0);
 		TogglePlayerControllable(playerid, true);
